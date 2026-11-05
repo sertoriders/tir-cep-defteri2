@@ -1,0 +1,274 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Global helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        (request.auth.token.email == 'sh_dilek@hotmail.com' && request.auth.token.email_verified == true) ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'ADMIN')
+      );
+    }
+
+    // Entity validation functions
+    function isValidVehicle(data) {
+      return data.id is string && data.id.size() <= 64 &&
+             data.plate is string && data.plate.size() <= 20 &&
+             data.name is string && data.name.size() <= 100 &&
+             data.tankCapacity is number && data.tankCapacity > 0 && data.tankCapacity <= 2000 &&
+             data.status in ['IDLE', 'LOADED', 'EMPTY', 'MAINTENANCE', 'RESTING'] &&
+             (!('assignedDriverId' in data) || data.assignedDriverId is string) &&
+             (!('assignedDriverName' in data) || data.assignedDriverName is string) &&
+             (!('currentFuelLiters' in data) || data.currentFuelLiters is number) &&
+             (!('avgConsumptionLoaded' in data) || data.avgConsumptionLoaded is number) &&
+             (!('avgConsumptionEmpty' in data) || data.avgConsumptionEmpty is number) &&
+             (!('odometerKm' in data) || data.odometerKm is number) &&
+             (!('lastLat' in data) || data.lastLat is number) &&
+             (!('lastLng' in data) || data.lastLng is number) &&
+             (!('lastLocationAddress' in data) || (data.lastLocationAddress is string && data.lastLocationAddress.size() <= 256)) &&
+             (!('lastLocationTime' in data) || (data.lastLocationTime is timestamp && data.lastLocationTime <= request.time)) &&
+             (!('activeTripId' in data) || data.activeTripId is string) &&
+             (!('isResting' in data) || data.isResting is bool) &&
+             (!('restStartTime' in data) || (data.restStartTime is timestamp && data.restStartTime <= request.time)) &&
+             (!('unrecordedDriveAlert' in data) || data.unrecordedDriveAlert is bool) &&
+             (!('updatedAt' in data) || (data.updatedAt is timestamp && data.updatedAt <= request.time));
+    }
+
+    function isValidTrip(data) {
+      return data.id is string && data.id.size() <= 64 &&
+             data.tripNumber is string && data.tripNumber.size() <= 64 &&
+             data.vehicleId is string && data.vehicleId.size() <= 64 &&
+             data.driverId is string && data.driverId.size() <= 128 &&
+             data.tripType in ['LOADED', 'EMPTY'] &&
+             data.startKm is number && data.startKm >= 0 &&
+             data.status in ['ACTIVE', 'COMPLETED'] &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             (!('driverName' in data) || (data.driverName is string && data.driverName.size() <= 100)) &&
+             (!('origin' in data) || (data.origin is string && data.origin.size() <= 150)) &&
+             (!('destination' in data) || (data.destination is string && data.destination.size() <= 150)) &&
+             (!('endKm' in data) || data.endKm is number) &&
+             (!('gpsRouteKm' in data) || data.gpsRouteKm is number) &&
+             (!('freightPrice' in data) || data.freightPrice is number) &&
+             (!('isPaid' in data) || data.isPaid is bool) &&
+             (!('paymentType' in data) || (data.paymentType is string && data.paymentType.size() <= 50)) &&
+             (!('paymentDueDate' in data) || (data.paymentDueDate is string && data.paymentDueDate.size() <= 50)) &&
+             (!('startTime' in data) || (data.startTime is timestamp && data.startTime <= request.time)) &&
+             (!('endTime' in data) || (data.endTime is timestamp && data.endTime <= request.time)) &&
+             (!('startLat' in data) || data.startLat is number) &&
+             (!('startLng' in data) || data.startLng is number) &&
+             (!('endLat' in data) || data.endLat is number) &&
+             (!('endLng' in data) || data.endLng is number) &&
+             (!('kmDiscrepancy' in data) || data.kmDiscrepancy is number) &&
+             (!('updatedAt' in data) || (data.updatedAt is timestamp && data.updatedAt <= request.time));
+    }
+
+    function isValidFuel(data) {
+      return data.id is string && data.id.size() <= 64 &&
+             data.vehicleId is string && data.vehicleId.size() <= 64 &&
+             data.driverId is string && data.driverId.size() <= 128 &&
+             data.liters is number && data.liters > 0 && data.liters <= 2000 &&
+             data.pricePerLiter is number && data.pricePerLiter > 0 &&
+             data.totalAmount is number && data.totalAmount >= 0 &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             (!('tripId' in data) || data.tripId is string) &&
+             (!('locationAddress' in data) || (data.locationAddress is string && data.locationAddress.size() <= 256)) &&
+             (!('latitude' in data) || data.latitude is number) &&
+             (!('longitude' in data) || data.longitude is number) &&
+             (!('receiptUrl' in data) || (data.receiptUrl is string && data.receiptUrl.size() <= 2048));
+    }
+
+    function isValidExpense(data) {
+      return data.id is string && data.id.size() <= 64 &&
+             data.vehicleId is string && data.vehicleId.size() <= 64 &&
+             data.driverId is string && data.driverId.size() <= 128 &&
+             data.category in ['YEMEK', 'KAHVE', 'SIGARA', 'PARK', 'TAMIR', 'LASTIK', 'HGS', 'YIKAMA', 'DIGER'] &&
+             data.amount is number && data.amount > 0 &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             (!('tripId' in data) || data.tripId is string) &&
+             (!('description' in data) || (data.description is string && data.description.size() <= 500)) &&
+             (!('locationAddress' in data) || (data.locationAddress is string && data.locationAddress.size() <= 256)) &&
+             (!('latitude' in data) || data.latitude is number) &&
+             (!('longitude' in data) || data.longitude is number) &&
+             (!('receiptUrl' in data) || (data.receiptUrl is string && data.receiptUrl.size() <= 2048));
+    }
+
+    function isValidAdvance(data) {
+      return data.id is string && data.id.size() <= 64 &&
+             data.driverId is string && data.driverId.size() <= 128 &&
+             data.amount is number && data.amount > 0 &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             (!('driverName' in data) || (data.driverName is string && data.driverName.size() <= 100)) &&
+             (!('description' in data) || (data.description is string && data.description.size() <= 500)) &&
+             (!('date' in data) || (data.date is string && data.date.size() <= 50));
+    }
+
+    function isValidDebt(data) {
+      return data.id is string && data.id.size() <= 64 &&
+             data.type in ['RECEIVABLE', 'PAYABLE'] &&
+             data.companyOrPerson is string && data.companyOrPerson.size() <= 150 &&
+             data.totalAmount is number && data.totalAmount >= 0 &&
+             data.remainingAmount is number &&
+             data.dueDate is string && data.dueDate.size() <= 50 &&
+             data.status in ['PENDING', 'PARTIAL', 'PAID', 'OVERDUE'] &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             (!('paidAmount' in data) || data.paidAmount is number) &&
+             (!('paymentFrequency' in data) || data.paymentFrequency in ['ONCE', 'WEEKLY', 'MONTHLY']) &&
+             (!('notes' in data) || (data.notes is string && data.notes.size() <= 500)) &&
+             (!('updatedAt' in data) || (data.updatedAt is timestamp && data.updatedAt <= request.time));
+    }
+
+    function isValidCorrectionRequest(data) {
+      return data.id is string && data.id.size() <= 64 &&
+             data.driverId is string && data.driverId.size() <= 128 &&
+             data.targetType in ['EXPENSE', 'FUEL', 'TRIP'] &&
+             data.targetId is string && data.targetId.size() <= 64 &&
+             data.requestedChanges is string && data.requestedChanges.size() <= 1000 &&
+             data.status in ['PENDING', 'APPROVED', 'REJECTED'] &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             (!('driverName' in data) || (data.driverName is string && data.driverName.size() <= 100)) &&
+             (!('vehicleId' in data) || data.vehicleId is string) &&
+             (!('adminNote' in data) || (data.adminNote is string && data.adminNote.size() <= 500)) &&
+             (!('updatedAt' in data) || (data.updatedAt is timestamp && data.updatedAt <= request.time));
+    }
+
+    function isValidUserProfile(data) {
+      return data.userId is string && data.userId.size() <= 128 &&
+             data.email is string && data.email.size() <= 150 &&
+             data.name is string && data.name.size() <= 100 &&
+             data.role in ['ADMIN', 'DRIVER'] &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             (!('assignedVehicleId' in data) || data.assignedVehicleId is string);
+    }
+
+    function isValidSettings(data) {
+      return data.kmDiscrepancyThreshold is number && data.kmDiscrepancyThreshold >= 0 &&
+             data.gpsUpdateIntervalSeconds is number && data.gpsUpdateIntervalSeconds >= 5 &&
+             (!('updatedAt' in data) || (data.updatedAt is timestamp && data.updatedAt <= request.time));
+    }
+
+    // Collection: /vehicles/{vehicleId}
+    match /vehicles/{vehicleId} {
+      allow get, list: if isSignedIn();
+      allow create: if isAdmin() && isValidVehicle(incoming());
+      allow update: if isSignedIn() && (
+        isAdmin() ||
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'odometerKm', 'currentFuelLiters', 'status',
+          'lastLat', 'lastLng', 'lastLocationAddress', 'lastLocationTime',
+          'activeTripId', 'isResting', 'restStartTime', 'unrecordedDriveAlert', 'updatedAt'
+        ])
+      ) && isValidVehicle(incoming());
+      allow delete: if isAdmin();
+    }
+
+    // Collection: /trips/{tripId}
+    match /trips/{tripId} {
+      allow get: if isSignedIn() && (isAdmin() || resource.data.driverId == request.auth.uid);
+      allow list: if isSignedIn() && (isAdmin() || resource.data.driverId == request.auth.uid);
+      allow create: if isSignedIn() &&
+                    (incoming().driverId == request.auth.uid || isAdmin()) &&
+                    isValidTrip(incoming());
+      allow update: if isSignedIn() && (
+        isAdmin() ||
+        (existing().driverId == request.auth.uid &&
+         incoming().driverId == existing().driverId &&
+         incoming().diff(existing()).affectedKeys().hasOnly([
+           'status', 'endKm', 'gpsRouteKm', 'endTime', 'endLat', 'endLng', 'kmDiscrepancy', 'updatedAt'
+         ]))
+      ) && isValidTrip(incoming());
+      allow delete: if isAdmin();
+    }
+
+    // Collection: /fuel_entries/{fuelId}
+    match /fuel_entries/{fuelId} {
+      allow get: if isSignedIn() && (isAdmin() || resource.data.driverId == request.auth.uid);
+      allow list: if isSignedIn() && (isAdmin() || resource.data.driverId == request.auth.uid);
+      allow create: if isSignedIn() &&
+                    (incoming().driverId == request.auth.uid || isAdmin()) &&
+                    isValidFuel(incoming());
+      allow update: if isAdmin() && isValidFuel(incoming());
+      allow delete: if isAdmin();
+    }
+
+    // Collection: /expense_entries/{expenseId}
+    match /expense_entries/{expenseId} {
+      allow get: if isSignedIn() && (isAdmin() || resource.data.driverId == request.auth.uid);
+      allow list: if isSignedIn() && (isAdmin() || resource.data.driverId == request.auth.uid);
+      allow create: if isSignedIn() &&
+                    (incoming().driverId == request.auth.uid || isAdmin()) &&
+                    isValidExpense(incoming());
+      allow update: if isAdmin() && isValidExpense(incoming());
+      allow delete: if isAdmin();
+    }
+
+    // Collection: /advances/{advanceId}
+    match /advances/{advanceId} {
+      allow get: if isSignedIn() && (isAdmin() || resource.data.driverId == request.auth.uid);
+      allow list: if isSignedIn() && (isAdmin() || resource.data.driverId == request.auth.uid);
+      allow create: if isAdmin() && isValidAdvance(incoming());
+      allow update: if isAdmin() && isValidAdvance(incoming());
+      allow delete: if isAdmin();
+    }
+
+    // Collection: /debt_records/{debtId}
+    match /debt_records/{debtId} {
+      allow get, list: if isAdmin();
+      allow create: if isAdmin() && isValidDebt(incoming());
+      allow update: if isAdmin() && isValidDebt(incoming());
+      allow delete: if isAdmin();
+    }
+
+    // Collection: /correction_requests/{reqId}
+    match /correction_requests/{reqId} {
+      allow get: if isSignedIn() && (isAdmin() || resource.data.driverId == request.auth.uid);
+      allow list: if isSignedIn() && (isAdmin() || resource.data.driverId == request.auth.uid);
+      allow create: if isSignedIn() &&
+                    incoming().driverId == request.auth.uid &&
+                    isValidCorrectionRequest(incoming());
+      allow update: if isAdmin() && isValidCorrectionRequest(incoming());
+      allow delete: if isAdmin();
+    }
+
+    // Collection: /users/{userId}
+    match /users/{userId} {
+      allow get: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow list: if isAdmin();
+      allow create: if isSignedIn() &&
+                    request.auth.uid == userId &&
+                    incoming().userId == request.auth.uid &&
+                    (incoming().role == 'DRIVER' || incoming().email == 'sh_dilek@hotmail.com' || isAdmin()) &&
+                    isValidUserProfile(incoming());
+      allow update: if isAdmin() && isValidUserProfile(incoming());
+      allow delete: if isAdmin();
+    }
+
+    // Collection: /settings/{settingId}
+    match /settings/{settingId} {
+      allow get, list: if isSignedIn();
+      allow create, update: if isAdmin() && isValidSettings(incoming());
+      allow delete: if isAdmin();
+    }
+  }
+}

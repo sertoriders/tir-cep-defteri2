@@ -1,0 +1,6 @@
+{
+  "name": "TIR CEP DEFTERİ",
+  "description": "Profesyonel filo ve nakliye yönetim uygulaması",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

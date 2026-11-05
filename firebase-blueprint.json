@@ -1,0 +1,222 @@
+{
+  "entities": {
+    "Vehicle": {
+      "title": "Vehicle",
+      "description": "Filo aracı bilgileri ve canlı durum",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "plate": { "type": "string" },
+        "name": { "type": "string" },
+        "assignedDriverId": { "type": "string" },
+        "assignedDriverName": { "type": "string" },
+        "tankCapacity": { "type": "number" },
+        "currentFuelLiters": { "type": "number" },
+        "avgConsumptionLoaded": { "type": "number" },
+        "avgConsumptionEmpty": { "type": "number" },
+        "odometerKm": { "type": "number" },
+        "status": { "type": "string", "enum": ["IDLE", "LOADED", "EMPTY", "MAINTENANCE", "RESTING"] },
+        "lastLat": { "type": "number" },
+        "lastLng": { "type": "number" },
+        "lastLocationAddress": { "type": "string" },
+        "lastLocationTime": { "type": "string", "format": "date-time" },
+        "activeTripId": { "type": "string" },
+        "isResting": { "type": "boolean" },
+        "restStartTime": { "type": "string", "format": "date-time" },
+        "unrecordedDriveAlert": { "type": "boolean" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "plate", "name", "tankCapacity", "status"]
+    },
+    "Trip": {
+      "title": "Trip",
+      "description": "Sefer bilgisi (Yüklü veya Boş Seyir)",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "tripNumber": { "type": "string" },
+        "vehicleId": { "type": "string" },
+        "driverId": { "type": "string" },
+        "driverName": { "type": "string" },
+        "tripType": { "type": "string", "enum": ["LOADED", "EMPTY"] },
+        "origin": { "type": "string" },
+        "destination": { "type": "string" },
+        "startKm": { "type": "number" },
+        "endKm": { "type": "number" },
+        "gpsRouteKm": { "type": "number" },
+        "freightPrice": { "type": "number" },
+        "isPaid": { "type": "boolean" },
+        "paymentType": { "type": "string" },
+        "paymentDueDate": { "type": "string" },
+        "status": { "type": "string", "enum": ["ACTIVE", "COMPLETED"] },
+        "startTime": { "type": "string", "format": "date-time" },
+        "endTime": { "type": "string", "format": "date-time" },
+        "startLat": { "type": "number" },
+        "startLng": { "type": "number" },
+        "endLat": { "type": "number" },
+        "endLng": { "type": "number" },
+        "kmDiscrepancy": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "tripNumber", "vehicleId", "driverId", "tripType", "startKm", "status", "createdAt"]
+    },
+    "FuelEntry": {
+      "title": "FuelEntry",
+      "description": "Yakıt alım kaydı",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "vehicleId": { "type": "string" },
+        "driverId": { "type": "string" },
+        "tripId": { "type": "string" },
+        "liters": { "type": "number" },
+        "pricePerLiter": { "type": "number" },
+        "totalAmount": { "type": "number" },
+        "locationAddress": { "type": "string" },
+        "latitude": { "type": "number" },
+        "longitude": { "type": "number" },
+        "receiptUrl": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "vehicleId", "driverId", "liters", "pricePerLiter", "totalAmount", "createdAt"]
+    },
+    "ExpenseEntry": {
+      "title": "ExpenseEntry",
+      "description": "Şoför veya araç masraf kaydı",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "vehicleId": { "type": "string" },
+        "driverId": { "type": "string" },
+        "tripId": { "type": "string" },
+        "category": { "type": "string", "enum": ["YEMEK", "KAHVE", "SIGARA", "PARK", "TAMIR", "LASTIK", "HGS", "YIKAMA", "DIGER"] },
+        "amount": { "type": "number" },
+        "description": { "type": "string" },
+        "locationAddress": { "type": "string" },
+        "latitude": { "type": "number" },
+        "longitude": { "type": "number" },
+        "receiptUrl": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "vehicleId", "driverId", "category", "amount", "createdAt"]
+    },
+    "Advance": {
+      "title": "Advance",
+      "description": "Şoföre verilen avans",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "driverId": { "type": "string" },
+        "driverName": { "type": "string" },
+        "amount": { "type": "number" },
+        "description": { "type": "string" },
+        "date": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "driverId", "amount", "createdAt"]
+    },
+    "DebtRecord": {
+      "title": "DebtRecord",
+      "description": "Alacak veya Verecek kaydı",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "type": "string", "enum": ["RECEIVABLE", "PAYABLE"] },
+        "companyOrPerson": { "type": "string" },
+        "totalAmount": { "type": "number" },
+        "paidAmount": { "type": "number" },
+        "remainingAmount": { "type": "number" },
+        "dueDate": { "type": "string" },
+        "paymentFrequency": { "type": "string", "enum": ["ONCE", "WEEKLY", "MONTHLY"] },
+        "status": { "type": "string", "enum": ["PENDING", "PARTIAL", "PAID", "OVERDUE"] },
+        "notes": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "type", "companyOrPerson", "totalAmount", "remainingAmount", "dueDate", "status", "createdAt"]
+    },
+    "CorrectionRequest": {
+      "title": "CorrectionRequest",
+      "description": "Şoförün masraf veya yakıt için düzeltme talebi",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "driverId": { "type": "string" },
+        "driverName": { "type": "string" },
+        "vehicleId": { "type": "string" },
+        "targetType": { "type": "string", "enum": ["EXPENSE", "FUEL", "TRIP"] },
+        "targetId": { "type": "string" },
+        "requestedChanges": { "type": "string" },
+        "status": { "type": "string", "enum": ["PENDING", "APPROVED", "REJECTED"] },
+        "adminNote": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "driverId", "targetType", "targetId", "requestedChanges", "status", "createdAt"]
+    },
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Kullanıcı profili ve rolü",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "email": { "type": "string" },
+        "name": { "type": "string" },
+        "role": { "type": "string", "enum": ["ADMIN", "DRIVER"] },
+        "assignedVehicleId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "email", "name", "role", "createdAt"]
+    },
+    "Settings": {
+      "title": "Settings",
+      "description": "Sistem ayarları",
+      "type": "object",
+      "properties": {
+        "kmDiscrepancyThreshold": { "type": "number" },
+        "gpsUpdateIntervalSeconds": { "type": "number" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["kmDiscrepancyThreshold", "gpsUpdateIntervalSeconds"]
+    }
+  },
+  "firestore": {
+    "/vehicles/{vehicleId}": {
+      "schema": "Vehicle",
+      "description": "Araç durumları ve atamaları"
+    },
+    "/trips/{tripId}": {
+      "schema": "Trip",
+      "description": "Sefer kayıtları"
+    },
+    "/fuel_entries/{fuelId}": {
+      "schema": "FuelEntry",
+      "description": "Yakıt fişleri ve kayıtları"
+    },
+    "/expense_entries/{expenseId}": {
+      "schema": "ExpenseEntry",
+      "description": "Masraf fişleri ve kayıtları"
+    },
+    "/advances/{advanceId}": {
+      "schema": "Advance",
+      "description": "Şoför avans ödemeleri"
+    },
+    "/debt_records/{debtId}": {
+      "schema": "DebtRecord",
+      "description": "Alacak ve verecek hesapları"
+    },
+    "/correction_requests/{reqId}": {
+      "schema": "CorrectionRequest",
+      "description": "Şoför kayıt düzeltme talepleri"
+    },
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "Kullanıcı rolleri ve araç atamaları"
+    },
+    "/settings/{settingId}": {
+      "schema": "Settings",
+      "description": "Uygulama genel ayarları"
+    }
+  }
+}
